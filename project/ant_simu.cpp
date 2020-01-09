@@ -29,6 +29,7 @@ void advance_time( const labyrinthe& land, pheromone& phen,
                    std::vector<ant>& ants, std::size_t& cpteur )
 {
     start[1] = std::chrono::system_clock::now();
+    #pragma omp parallel for schedule(dynamic, 64) reduction(+: cpteur)
     for ( size_t i = 0; i < ants.size(); ++i )
         ants[i].advance(phen, land, pos_food, pos_nest, cpteur);
     end[1] = std::chrono::system_clock::now();
@@ -92,10 +93,10 @@ int main(int nargs, char* argv[])
         end[4] = std::chrono::system_clock::now();
         elapsed_seconds[4] = end[4] - start[4];
 
-        if(food_quantity >= 100 && !already_print){
+        if(food_quantity >= 10000 && !already_print){
             end[0] = std::chrono::system_clock::now();
             elapsed_seconds[0] = end[0] - start[0];
-            std::cout << "Time to find 100 pieces of food: " << elapsed_seconds[0].count() << std::endl;
+            std::cout << "Time to find "<< food_quantity <<" pieces of food: " << elapsed_seconds[0].count() << std::endl;
             already_print = !already_print;
         }
 
