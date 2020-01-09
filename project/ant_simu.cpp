@@ -12,21 +12,45 @@
 # include "gui/quad.hpp"
 # include "gui/event_manager.hpp"
 # include "display.hpp"
+#include <chrono>
+
+std::chrono::time_point<std::chrono::system_clock> start[5], end[5];
+std::chrono::duration<double> elapsed_seconds[5];
+
+void print_time_execution(){
+    std::cout << "Time of function advance: " << elapsed_seconds[1].count() << std::endl;
+    std::cout << "Time of function do_evaporation: " << elapsed_seconds[2].count() << std::endl;
+    std::cout << "Time of function update: " << elapsed_seconds[3].count() << std::endl;
+    std::cout << "Time of function display: " << elapsed_seconds[4].count() << std::endl;
+}
 
 void advance_time( const labyrinthe& land, pheromone& phen, 
                    const position_t& pos_nest, const position_t& pos_food,
                    std::vector<ant>& ants, std::size_t& cpteur )
 {
+    start[1] = std::chrono::system_clock::now();
     for ( size_t i = 0; i < ants.size(); ++i )
         ants[i].advance(phen, land, pos_food, pos_nest, cpteur);
+    end[1] = std::chrono::system_clock::now();
+    elapsed_seconds[1] = end[1] - start[1];
+
+    start[2] = std::chrono::system_clock::now();
     phen.do_evaporation();
+    end[2] = std::chrono::system_clock::now();
+    elapsed_seconds[2] = end[2] - start[2];
+    
+    start[3] = std::chrono::system_clock::now();
     phen.update();
+    end[3] = std::chrono::system_clock::now();
+    elapsed_seconds[3] = end[3] - start[3];
 }
 
 int main(int nargs, char* argv[])
 {
+    start[0] = std::chrono::system_clock::now();
 
-    const dimension_t dims{20,50};// Dimension du labyrinthe
+    bool already_print = false;
+    const dimension_t dims{64,128};// Dimension du labyrinthe
     const std::size_t life = int(dims.first*dims.second);
     const int nb_ants = 2*dims.first*dims.second; // Nombre de fourmis
     const double eps = 0.75;  // Coefficient d'exploration
@@ -58,10 +82,23 @@ int main(int nargs, char* argv[])
 
     gui::event_manager manager;
     manager.on_key_event(int('q'), [] (int code) { exit(0); });
+    manager.on_key_event(int('t'), [] (int code) { print_time_execution(); });
     manager.on_display([&] { displayer.display(food_quantity); win.blit(); });
     manager.on_idle([&] () { 
         advance_time(laby, phen, pos_nest, pos_food, ants, food_quantity);
+        
+        start[4] = std::chrono::system_clock::now();
         displayer.display(food_quantity); 
+        end[4] = std::chrono::system_clock::now();
+        elapsed_seconds[4] = end[4] - start[4];
+
+        if(food_quantity >= 100 && !already_print){
+            end[0] = std::chrono::system_clock::now();
+            elapsed_seconds[0] = end[0] - start[0];
+            std::cout << "Time to find 100 pieces of food: " << elapsed_seconds[0].count() << std::endl;
+            already_print = !already_print;
+        }
+
         win.blit(); 
     });
     manager.loop();
