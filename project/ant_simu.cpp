@@ -72,7 +72,8 @@ int main(int nargs, char* argv[])
 
     if(rank == 1){
         const double eps = 0.75;  // Coefficient d'exploration
-            
+        size_t food_quantity = 0;
+
         // Définition du coefficient d'exploration de toutes les fourmis.
         ant::set_exploration_coef(eps);
         // On va créer toutes les fourmis dans le nid :
@@ -82,7 +83,7 @@ int main(int nargs, char* argv[])
             ants.emplace_back(pos_nest, life);
         // On crée toutes les fourmis dans la fourmilière.
         pheromone phen(laby.dimensions(), pos_food, pos_nest, alpha, beta);
-
+        advance_time(laby, phen, pos_nest, pos_food, ants, food_quantity);
         //MPI_Ssend();
 
     }
@@ -119,7 +120,9 @@ int main(int nargs, char* argv[])
             }
 
             win.blit(); 
-    });
+        });
+        manager.loop();
+    }
 
     return 0;
 }
