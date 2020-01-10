@@ -30,6 +30,7 @@ void advance_time( const labyrinthe& land, pheromone& phen,
                    std::vector<ant>& ants, std::size_t& cpteur )
 {
     start[1] = std::chrono::system_clock::now();
+    #pragma omp parallel for schedule(dynamic, 64) reduction(+:cpteur)
     for ( size_t i = 0; i < ants.size(); ++i )
         ants[i].advance(phen, land, pos_food, pos_nest, cpteur);
     end[1] = std::chrono::system_clock::now();
@@ -103,9 +104,6 @@ int main(int nargs, char* argv[])
             MPI_Wait(&request, &status);
         }
         
-
-        //MPI_Ssend();
-
     }
 
     if(rank == 0){
