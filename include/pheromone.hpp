@@ -97,9 +97,13 @@ public:
 
     void update( ) {
         m_map_of_pheromone.swap( m_buffer_pheromone );
-	std::copy(m_map_of_pheromone.begin(), m_map_of_pheromone.end(),
+	    std::copy(m_map_of_pheromone.begin(), m_map_of_pheromone.end(),
 		  m_buffer_pheromone.begin());
         m_map_of_pheromone[m_pos_food.first * m_stride + m_pos_food.second] = 1;
+    }
+
+    void copy(std::vector<pheromone_t> m_buffer) {
+        m_map_of_pheromone.swap(m_buffer);
     }
 
 private:
