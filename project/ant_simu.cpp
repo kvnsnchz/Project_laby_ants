@@ -48,11 +48,9 @@ void advance_time( const labyrinthe& land, pheromone& phen,
 
 int main(int nargs, char* argv[])
 {
-    start[0] = std::chrono::system_clock::now();
-
     bool already_print = false;
     int nbp, rank;
-    const dimension_t dims{16,16};// Dimension du labyrinthe
+    const dimension_t dims{32,64};// Dimension du labyrinthe
     const double alpha=0.97; // Coefficient de chaos
     //const double beta=0.9999; // Coefficient d'évaporation
     const double beta=0.999; // Coefficient d'évaporation 
@@ -111,6 +109,8 @@ int main(int nargs, char* argv[])
     }
 
     if(rank == 0){
+        start[0] = std::chrono::system_clock::now();
+
         std::vector<ant> ants;
         ants.reserve(nb_ants);
         size_t food_quantity = 0;
@@ -123,12 +123,10 @@ int main(int nargs, char* argv[])
         std::vector<double> buffer_rec(buffer_size);
         
         MPI_Recv(buffer_rec.data(), buffer_rec.size(), MPI_DOUBLE, 1, 101, MPI_COMM_WORLD, &status);
-        
         food_quantity = buffer_rec[0];
         for(size_t i = ants_start; i < pher_start; i += 2){
             ants.emplace_back(position_t(buffer_rec[i], buffer_rec[i+1]), life);
         }
-
         phen.copy(std::vector<double>(buffer_rec.begin() + pher_start, buffer_rec.end()));
 
         gui::context graphic_context(nargs, argv);
@@ -137,7 +135,7 @@ int main(int nargs, char* argv[])
         display_t displayer( laby, phen, pos_nest, pos_food, ants, win );
         
         gui::event_manager manager;
-        manager.on_key_event(int('q'), [] (int code) { MPI_Finalize(); exit(0); });
+        manager.on_key_event(int('q'), [] (int code) { MPI_Abort(MPI_COMM_WORLD, MPI_SUCCESS);});
         manager.on_key_event(int('t'), [] (int code) { print_time_execution(); });
         manager.on_display([&] { displayer.display(food_quantity); win.blit(); });
         manager.on_idle([&] () { 
@@ -147,23 +145,21 @@ int main(int nargs, char* argv[])
             displayer.display(food_quantity); 
             end[4] = std::chrono::system_clock::now();
             elapsed_seconds[4] = end[4] - start[4];
-            if(food_quantity >= 100 && !already_print){
+            if(food_quantity >= 10000 && !already_print){
                 end[0] = std::chrono::system_clock::now();
                 elapsed_seconds[0] = end[0] - start[0];
-                std::cout << "Time to find 100 pieces of food: " << elapsed_seconds[0].count() << std::endl;
+                std::cout << "Time to find " << food_quantity << " pieces of food: " << elapsed_seconds[0].count() << std::endl;
                 already_print = !already_print;
             }
 
             win.blit();
 
             MPI_Recv(buffer_rec.data(), buffer_rec.size(), MPI_DOUBLE, 1, 101, MPI_COMM_WORLD, &status);
-        
             food_quantity = buffer_rec[0];
-            for(size_t i = ants_start; i < pher_start; i += 2){
-                ants.emplace_back(position_t(buffer_rec[i], buffer_rec[i+1]), life);
+            for(size_t i = ants_start, j = 0; i < pher_start; i += 2, ++j){
+                ants[j].set_position(position_t(buffer_rec[i], buffer_rec[i+1]));
             }
-
-           phen.copy(std::vector<double>(buffer_rec.begin() + pher_start, buffer_rec.end()));
+            phen.copy(std::vector<double>(buffer_rec.begin() + pher_start, buffer_rec.end()));
         });
         manager.loop();
     }
