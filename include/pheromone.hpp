@@ -104,8 +104,8 @@ public:
         m_map_of_pheromone[m_pos_food.first * m_stride + m_pos_food.second] = 1;
     }
 
-    void copy(std::vector<pheromone_t> m_buffer) {
-        m_map_of_pheromone.swap(m_buffer);
+    void copy(const std::vector<pheromone_t> m_buffer) {
+        std::copy(m_buffer.begin(), m_buffer.end(), m_map_of_pheromone.begin());
     }
 
 private:
