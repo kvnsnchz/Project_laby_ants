@@ -91,7 +91,7 @@ public:
         double             v1_upper    = std::max( upper_cell, 0. );
         double             v1_bottom   = std::max( bottom_cell, 0. );
         
-        #pragma omp critical
+       // #pragma omp critical
         m_buffer_pheromone[i*m_stride + j] =
             m_alpha * std::max( {v1_left, v1_right, v1_upper, v1_bottom} ) +
             ( 1 - m_alpha ) * 0.25 * ( v1_left + v1_right + v1_upper + v1_bottom );
@@ -106,6 +106,10 @@ public:
 
     void copy(const std::vector<pheromone_t> m_buffer) {
         std::copy(m_buffer.begin(), m_buffer.end(), m_map_of_pheromone.begin());
+    }
+
+    std::vector<pheromone_t> get_m_map_of_pheromone() const{
+        return m_map_of_pheromone;
     }
 
 private:
