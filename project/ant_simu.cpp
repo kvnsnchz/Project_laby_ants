@@ -30,7 +30,7 @@ void advance_time( const labyrinthe& land, pheromone& phen,
                    std::vector<ant>& ants, std::size_t& cpteur )
 {
     start[1] = std::chrono::system_clock::now();
-    //#pragma omp parallel for schedule(dynamic, 64) reduction(+:cpteur)
+    #pragma omp parallel for schedule(dynamic, 64) reduction(+:cpteur)
     for ( size_t i = 0; i < ants.size(); ++i )
         ants[i].advance(phen, land, pos_food, pos_nest, cpteur);
     end[1] = std::chrono::system_clock::now();
@@ -50,7 +50,7 @@ void advance_time( const labyrinthe& land, pheromone& phen,
 int main(int nargs, char* argv[])
 {
     bool already_print = false;
-    int nbp, rank;
+    int nbp, rank, provided;
     const dimension_t dims{32,64};// Dimension du labyrinthe
     const double alpha=0.97; // Coefficient de chaos
     //const double beta=0.9999; // Coefficient d'évaporation
@@ -65,7 +65,12 @@ int main(int nargs, char* argv[])
     MPI_Group world_group, group_0_1, group_1_n;
     MPI_Comm comm_0_1, comm_1_n;
 
-    MPI_Init(&nargs, &argv);
+    MPI_Init_thread(&nargs, &argv, MPI_THREAD_SERIALIZED, &provided);
+    if(provided < MPI_THREAD_SERIALIZED){
+        std::cout << "Error" << std::endl;
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+
     MPI_Comm_size(MPI_COMM_WORLD, &nbp);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
