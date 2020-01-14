@@ -50,7 +50,7 @@ void advance_time( const labyrinthe& land, pheromone& phen,
 int main(int nargs, char* argv[])
 {
     bool already_print = false;
-    int nbp, rank, provided;
+    int nbp, rank;
     const dimension_t dims{32,64};// Dimension du labyrinthe
     const double alpha=0.97; // Coefficient de chaos
     //const double beta=0.9999; // Coefficient d'évaporation
@@ -65,12 +65,7 @@ int main(int nargs, char* argv[])
     MPI_Group world_group, group_0_1, group_1_n;
     MPI_Comm comm_0_1, comm_1_n;
 
-    MPI_Init_thread(&nargs, &argv, MPI_THREAD_SERIALIZED, &provided);
-    if(provided < MPI_THREAD_SERIALIZED){
-        std::cout << "Error" << std::endl;
-        MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-
+    MPI_Init(&nargs, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &nbp);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
