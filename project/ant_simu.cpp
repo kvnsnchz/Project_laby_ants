@@ -13,6 +13,7 @@
 # include "gui/event_manager.hpp"
 # include "display.hpp"
 #include <chrono>
+#include <omp.h>
 
 std::chrono::time_point<std::chrono::system_clock> start[5], end[5];
 std::chrono::duration<double> elapsed_seconds[5];
@@ -27,11 +28,27 @@ void print_time_execution(){
 void advance_time( const labyrinthe& land, pheromone& phen, 
                    const position_t& pos_nest, const position_t& pos_food,
                    std::vector<ant>& ants, std::size_t& cpteur )
-{
-    start[1] = std::chrono::system_clock::now();
-    #pragma omp parallel for schedule(dynamic, 64) reduction(+: cpteur)
-    for ( size_t i = 0; i < ants.size(); ++i )
-        ants[i].advance(phen, land, pos_food, pos_nest, cpteur);
+{   
+    #pragma omp parallel reduction (+: cpteur)
+    {
+        if(omp_get_thread_num() != 0){
+            int num_thread = omp_get_thread_num() - 1;
+            int size_thread = omp_get_num_threads() - 1;
+            int size_block = ants.size()/size_thread;
+
+            int start = num_thread * size_block;
+            int end = start + size_block;
+
+           // #pragma omp critical
+           //std::cout << "advance " << omp_get_thread_num() << " - " <<  start << " - "  << end << std::endl;
+            for ( size_t i = start; i < end; ++i ){
+                ants[i].advance(phen, land, pos_food, pos_nest, cpteur);
+            }
+        }
+        
+    }
+   
+        
     end[1] = std::chrono::system_clock::now();
     elapsed_seconds[1] = end[1] - start[1];
 
@@ -86,12 +103,18 @@ int main(int nargs, char* argv[])
     manager.on_key_event(int('t'), [] (int code) { print_time_execution(); });
     manager.on_display([&] { displayer.display(food_quantity); win.blit(); });
     manager.on_idle([&] () { 
+     
         advance_time(laby, phen, pos_nest, pos_food, ants, food_quantity);
-        
-        start[4] = std::chrono::system_clock::now();
-        displayer.display(food_quantity); 
-        end[4] = std::chrono::system_clock::now();
-        elapsed_seconds[4] = end[4] - start[4];
+
+        #pragma omp master 
+        {   
+           // #pragma omp critical
+          //std::cout << "display " << omp_get_thread_num() << std::endl;
+            start[4] = std::chrono::system_clock::now();
+            displayer.display(food_quantity); 
+            end[4] = std::chrono::system_clock::now();
+            elapsed_seconds[4] = end[4] - start[4];
+        }
 
         if(food_quantity >= 10000 && !already_print){
             end[0] = std::chrono::system_clock::now();
